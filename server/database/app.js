@@ -10,26 +10,37 @@ app.use(require('body-parser').urlencoded({ extended: false }));
 
 const reviews_data = JSON.parse(fs.readFileSync("reviews.json", 'utf8'));
 const dealerships_data = JSON.parse(fs.readFileSync("dealerships.json", 'utf8'));
+// Add this logic to ensure data is saved when the server starts
+const Dealer = require('./dealership');
+const Review = require('./review');
 
-mongoose.connect("mongodb://mongo_db:27017/",{'dbName':'dealershipsDB'});
+const seedDatabase = async () => {
+    try {
+        await Dealer.deleteMany({});
+        await Dealer.insertMany(dealerships_data.dealerships);
+        await Review.deleteMany({});
+        await Review.insertMany(reviews_data.reviews);
+        console.log("Database seeded successfully!");
+    } catch (error) {
+        console.error("Error seeding database:", error);
+    }
+};
 
+// Replace lines 28-32 with this:
+mongoose.connect("mongodb://db_container:27017/dealershipsDB")
+  .then(async () => {
+    console.log("--- STARTING APP.JS ---");
+const express = require('express');
+const mongoose = require('mongoose');
+console.log("--- LOADED EXPRESS AND MONGOOSE ---");
+// ... rest of your code
+    await seedDatabase();
+  })
+  .catch((err) => console.error("Could not connect to MongoDB", err));
 
 const Reviews = require('./review');
 
 const Dealerships = require('./dealership');
-
-try {
-  Reviews.deleteMany({}).then(()=>{
-    Reviews.insertMany(reviews_data['reviews']);
-  });
-  Dealerships.deleteMany({}).then(()=>{
-    Dealerships.insertMany(dealerships_data['dealerships']);
-  });
-  
-} catch (error) {
-  res.status(500).json({ error: 'Error fetching documents' });
-}
-
 
 // Express route to home
 app.get('/', async (req, res) => {
@@ -58,18 +69,38 @@ app.get('/fetchReviews/dealer/:id', async (req, res) => {
 
 // Express route to fetch all dealerships
 app.get('/fetchDealers', async (req, res) => {
-//Write your code here
-});
-
-// Express route to fetch Dealers by a particular state
-app.get('/fetchDealers/:state', async (req, res) => {
-//Write your code here
-});
-
-// Express route to fetch dealer by a particular id
-app.get('/fetchDealer/:id', async (req, res) => {
-//Write your code here
-});
+    try {
+      const documents = await Dealerships.find();
+      console.log("Documents found:", documents.length); // ADD THIS LINE TO DEBUG
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ error: 'Error fetching dealerships' });
+    }
+  });
+  
+  // Express route to fetch Dealers by a particular state
+  app.get('/fetchDealers/:state', async (req, res) => {
+    try {
+      const documents = await Dealerships.find({ state: req.params.state });
+      res.json(documents);
+    } catch (error) {
+      res.status(500).json({ error: 'Error fetching dealerships by state' });
+    }
+  });
+  
+  // Express route to fetch dealer by a particular id
+  app.get('/fetchDealer/:id', async (req, res) => {
+    try {
+      // Assuming 'id' in your database is a number, if it's a string, just use req.params.id
+      const document = await Dealerships.findOne({ id: parseInt(req.params.id) });
+      if (!document) {
+        return res.status(404).json({ error: 'Dealer not found' });
+      }
+      res.json(document);
+    } catch (error) {
+      res.status(500).json({ error: 'Error fetching dealer by ID' });
+    }
+  });
 
 //Express route to insert review
 app.post('/insert_review', express.raw({ type: '*/*' }), async (req, res) => {

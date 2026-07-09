@@ -20,10 +20,11 @@ const Dealer = () => {
   let root_url = curr_url.substring(0,curr_url.indexOf("dealer"));
   let params = useParams();
   let id =params.id;
-  let dealer_url = root_url+`djangoapp/dealer/${id}`;
-  let reviews_url = root_url+`djangoapp/reviews/dealer/${id}`;
-  let post_review = root_url+`postreview/${id}`;
-  
+
+// We use the proxy route directly defined in your Django project
+let dealer_url = `/djangoapp/dealer/${id}`;
+let reviews_url = `/djangoapp/reviews/dealer/${id}`;
+let post_review = `/postreview/${id}`;
   const get_dealer = async ()=>{
     const res = await fetch(dealer_url, {
       method: "GET"
@@ -36,21 +37,34 @@ const Dealer = () => {
     }
   }
 
-  const get_reviews = async ()=>{
-    const res = await fetch(reviews_url, {
-      method: "GET"
-    });
-    const retobj = await res.json();
-    
-    if(retobj.status === 200) {
-      if(retobj.reviews.length > 0){
-        setReviews(retobj.reviews)
-      } else {
-        setUnreviewed(true);
+  const get_reviews = async () => {
+    try {
+      const res = await fetch(reviews_url, { method: "GET" });
+      
+      // 1. Check if the network response was okay
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
+  
+      const retobj = await res.json();
+      console.log("Reviews API response:", retobj); // THIS IS CRITICAL FOR DEBUGGING
+  
+      // 2. Safely check for reviews
+      if (retobj && retobj.reviews) {
+        if (retobj.reviews.length > 0) {
+          setReviews(retobj.reviews);
+        } else {
+          setUnreviewed(true);
+        }
+      } else {
+        console.warn("Reviews data missing or empty in response");
+        setUnreviewed(true); // Treat as unreviewed if data is missing
+      }
+    } catch (error) {
+      console.error("Failed to fetch reviews:", error);
     }
   }
-
+  
   const senti_icon = (sentiment)=>{
     let icon = sentiment === "positive"?positive_icon:sentiment==="negative"?negative_icon:neutral_icon;
     return icon;
