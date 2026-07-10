@@ -2,9 +2,15 @@ import requests
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# This tells the system exactly where to find your .env file
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path)
 
-backend_url = os.getenv('backend_url', default="http://localhost:3030")
+backend_url = os.getenv('backend_url')
+# Add this print so you can see if it's working in your terminal
+print(f"DEBUG: Loaded backend_url as: {backend_url}")
+
+sentiment_analyzer_url = os.getenv('sentiment_analyzer_url', default="http://localhost:5000/")
 sentiment_analyzer_url = os.getenv('sentiment_analyzer_url', default="http://localhost:5000/")
 
 def get_request(endpoint, **kwargs):

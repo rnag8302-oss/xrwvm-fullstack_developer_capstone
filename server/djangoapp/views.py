@@ -81,9 +81,18 @@ def get_dealerships(request, state="All"):
         endpoint = "/fetchDealers"
     else:
         endpoint = "/fetchDealers/"+state
+    
     dealerships = get_request(endpoint)
-    return JsonResponse({"status":200,"dealers":dealerships})
-# ...
+    
+    # ADD THIS: Print to your terminal to see if the backend replied
+    print(f"DEBUG: Endpoint called: {endpoint}")
+    print(f"DEBUG: Data received from backend: {dealerships}")
+    
+    if dealerships is None:
+        # If the backend is down, the frontend gets this error
+        return JsonResponse({"status": 500, "message": "Backend API unavailable"})
+        
+    return JsonResponse({"status": 200, "dealers": dealerships})
 
 # Create a `get_dealer_reviews` view to render the reviews of a dealer
 def get_dealer_reviews(request, dealer_id):
